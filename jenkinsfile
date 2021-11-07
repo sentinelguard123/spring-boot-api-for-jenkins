@@ -1,0 +1,36 @@
+pipeline {
+    agent {
+        docker {
+            image 'openjdk:11'
+            args  '-v /tmp:/tmp'
+            reuseNode true
+        }
+    }
+
+    triggers{
+        githubPush()
+    }
+
+    stages {
+		stage ("test") {
+        	steps {
+            	sh './gradlew test'
+            }
+        }
+		stage ("build") {
+        	steps {
+            	sh './gradlew bootJar'
+            }
+        }
+		stage ("image") {
+        	steps {
+            	sh 'docker build . --force-rm=true --tag sentinelguard/spring-integration-jenkins'
+            }
+        }
+        stage ('Deploy') {
+            steps {
+                sh 'docker run -d -p 8090:8090 sentinelguard/spring-integration-jenkins'
+            }
+        }
+    }
+}
